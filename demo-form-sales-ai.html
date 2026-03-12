@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フォーム営業AI - デモダッシュボード</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --navy: #1e3a5f;
+    --navy-light: #2a4f7a;
+    --navy-dark: #152c4a;
+    --accent: #3b82f6;
+    --accent-light: #60a5fa;
+    --success: #10b981;
+    --success-bg: #ecfdf5;
+    --warning: #f59e0b;
+    --warning-bg: #fffbeb;
+    --error: #ef4444;
+    --error-bg: #fef2f2;
+    --info: #6366f1;
+    --info-bg: #eef2ff;
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --sidebar-width: 250px;
+    --topbar-height: 64px;
+    --demo-banner-height: 44px;
+  }
+
+  body {
+    font-family: 'Noto Sans JP', 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Demo Banner */
+  .demo-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+    height: var(--demo-banner-height);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+  }
+  .demo-banner span { margin-right: 8px; font-size: 15px; }
+
+  /* Sidebar */
+  .sidebar {
+    position: fixed; top: var(--demo-banner-height); left: 0; bottom: 0;
+    width: var(--sidebar-width); background: var(--navy);
+    display: flex; flex-direction: column; z-index: 100;
+    transition: transform 0.3s ease;
+  }
+  .sidebar-logo {
+    padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sidebar-logo-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-light));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #fff; font-weight: 700;
+  }
+  .sidebar-logo-text {
+    color: #fff; font-size: 16px; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .sidebar-logo-sub {
+    color: rgba(255,255,255,0.5); font-size: 11px; font-weight: 400;
+    margin-top: 2px;
+  }
+  .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+  .sidebar-section {
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    padding: 12px 12px 8px; margin-top: 8px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: 8px; cursor: pointer;
+    color: rgba(255,255,255,0.6); font-size: 13.5px; font-weight: 500;
+    transition: all 0.2s ease; position: relative; text-decoration: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.9); }
+  .nav-item.active {
+    background: rgba(59,130,246,0.15); color: #fff;
+  }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 24px; background: var(--accent); border-radius: 0 3px 3px 0;
+  }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.7; }
+  .nav-item.active svg { opacity: 1; }
+  .nav-badge {
+    margin-left: auto; background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+  }
+  .sidebar-footer {
+    padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px; font-weight: 600;
+  }
+  .sidebar-user-name { color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; }
+  .sidebar-user-role { color: rgba(255,255,255,0.4); font-size: 11px; }
+
+  /* Top Bar */
+  .topbar {
+    position: fixed; top: var(--demo-banner-height); left: var(--sidebar-width); right: 0;
+    height: var(--topbar-height); background: var(--surface);
+    border-bottom: 1px solid var(--border); z-index: 90;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar-title { font-size: 18px; font-weight: 700; color: var(--text); }
+  .topbar-date { font-size: 13px; color: var(--text-secondary); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .ai-status {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--success-bg); border: 1px solid #bbf7d0;
+    padding: 6px 14px; border-radius: 20px; font-size: 12px;
+    color: #065f46; font-weight: 600;
+  }
+  .ai-pulse {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--success);
+    position: relative;
+  }
+  .ai-pulse::after {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%;
+    background: rgba(16, 185, 129, 0.3);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.8); opacity: 0; }
+  }
+  .topbar-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; font-size: 13px;
+    font-weight: 600; cursor: pointer; border: none;
+    transition: all 0.2s ease; font-family: inherit;
+  }
+  .topbar-btn-outline {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  }
+  .topbar-btn-outline:hover { background: var(--bg); border-color: #cbd5e1; }
+  .topbar-btn-primary {
+    background: var(--navy); color: #fff;
+  }
+  .topbar-btn-primary:hover { background: var(--navy-light); }
+  .topbar-btn svg { width: 15px; height: 15px; }
+
+  /* Main Content */
+  .main {
+    margin-top: calc(var(--demo-banner-height) + var(--topbar-height));
+    margin-left: var(--sidebar-width);
+    padding: 24px 28px 40px;
+    min-height: calc(100vh - var(--demo-banner-height) - var(--topbar-height));
+  }
+
+  /* Summary Cards */
+  .summary-cards {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  .summary-card {
+    background: var(--surface); border-radius: 12px; padding: 20px;
+    border: 1px solid var(--border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative; overflow: hidden;
+  }
+  .summary-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.06); }
+  .summary-card-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+  }
+  .summary-card-label { font-size: 12.5px; color: var(--text-secondary); font-weight: 500; }
+  .summary-card-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+  .summary-card-value {
+    font-size: 28px; font-weight: 700; color: var(--text);
+    font-family: 'Inter', sans-serif; letter-spacing: -0.5px;
+  }
+  .summary-card-change {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 12px; font-weight: 600; margin-top: 6px; padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .change-up { color: #065f46; background: #ecfdf5; }
+  .change-down { color: #991b1b; background: #fef2f2; }
+  .summary-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .summary-card:nth-child(1)::after { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+  .summary-card:nth-child(2)::after { background: linear-gradient(90deg, #10b981, #34d399); }
+  .summary-card:nth-child(3)::after { background: linear-gradient(90deg, #6366f1, #a78bfa); }
+  .summary-card:nth-child(4)::after { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .summary-card:nth-child(1) .summary-card-icon { background: #eff6ff; color: #3b82f6; }
+  .summary-card:nth-child(2) .summary-card-icon { background: #ecfdf5; color: #10b981; }
+  .summary-card:nth-child(3) .summary-card-icon { background: #eef2ff; color: #6366f1; }
+  .summary-card:nth-child(4) .summary-card-icon { background: #fffbeb; color: #f59e0b; }
+
+  /* Two Panel Layout */
+  .panels { display: grid; grid-template-columns: 420px 1fr; gap: 20px; }
+
+  /* Left Panel - Activity List */
+  .panel {
+    background: var(--surface); border-radius: 12px;
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .panel-header {
+    padding: 18px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-title { font-size: 15px; font-weight: 700; color: var(--text); }
+  .panel-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Filter Tabs */
+  .filter-tabs {
+    display: flex; gap: 4px; padding: 12px 20px;
+    border-bottom: 1px solid var(--border); background: #f8fafc;
+  }
+  .filter-tab {
+    padding: 6px 14px; border-radius: 6px; font-size: 12.5px;
+    font-weight: 500; cursor: pointer; border: none;
+    background: transparent; color: var(--text-secondary);
+    transition: all 0.2s ease; font-family: inherit;
+  }
+  .filter-tab:hover { background: #e2e8f0; color: var(--text); }
+  .filter-tab.active {
+    background: var(--navy); color: #fff;
+  }
+  .filter-tab-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    background: rgba(255,255,255,0.2); border-radius: 9px;
+    font-size: 10px; font-weight: 700; margin-left: 4px;
+  }
+  .filter-tab:not(.active) .filter-tab-count { background: #e2e8f0; }
+
+  /* Activity Items */
+  .activity-list { max-height: 540px; overflow-y: auto; }
+  .activity-list::-webkit-scrollbar { width: 5px; }
+  .activity-list::-webkit-scrollbar-track { background: transparent; }
+  .activity-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+  .activity-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; cursor: pointer; position: relative;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s ease;
+  }
+  .activity-item:hover { background: #f8fafc; }
+  .activity-item.selected { background: #eff6ff; }
+  .activity-item.selected::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: var(--accent);
+  }
+  .activity-score-ring {
+    width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .activity-score-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .activity-score-ring circle {
+    fill: none; stroke-width: 3; stroke-linecap: round;
+  }
+  .score-bg { stroke: #e2e8f0; }
+  .score-fill { transition: stroke-dashoffset 0.8s ease; }
+  .activity-score-value {
+    font-size: 12px; font-weight: 700; font-family: 'Inter', sans-serif;
+    color: var(--text); position: relative; z-index: 1;
+  }
+  .activity-info { flex: 1; min-width: 0; }
+  .activity-company {
+    font-size: 14px; font-weight: 600; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .activity-meta {
+    display: flex; align-items: center; gap: 8px; margin-top: 3px;
+  }
+  .industry-tag {
+    font-size: 11px; padding: 1px 8px; border-radius: 4px;
+    font-weight: 500; background: #f1f5f9; color: var(--text-secondary);
+    border: 1px solid #e2e8f0;
+  }
+  .activity-time { font-size: 11px; color: var(--text-muted); }
+  .activity-status {
+    flex-shrink: 0; font-size: 11.5px; font-weight: 600;
+    padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+  }
+  .status-sent { background: #ecfdf5; color: #065f46; border: 1px solid #bbf7d0; }
+  .status-analyzing { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+  .status-replied { background: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; }
+  .status-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  .status-scheduled { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+  /* Right Panel - Detail */
+  .detail-panel { display: flex; flex-direction: column; }
+  .detail-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 40px; text-align: center;
+  }
+  .detail-empty-icon {
+    width: 64px; height: 64px; border-radius: 16px; background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; margin-bottom: 16px;
+  }
+  .detail-empty-text { font-size: 14px; color: var(--text-secondary); }
+
+  .detail-content { padding: 0; }
+  .detail-section {
+    padding: 20px; border-bottom: 1px solid var(--border);
+  }
+  .detail-section:last-child { border-bottom: none; }
+  .detail-section-title {
+    font-size: 13px; font-weight: 700; color: var(--text);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .detail-section-title svg { width: 16px; height: 16px; color: var(--accent); }
+
+  /* Company Info */
+  .company-info-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .company-info-item {
+    padding: 10px 12px; background: #f8fafc; border-radius: 8px;
+    border: 1px solid #f1f5f9;
+  }
+  .company-info-label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-bottom: 3px; }
+  .company-info-value { font-size: 13.5px; font-weight: 600; color: var(--text); }
+
+  /* AI Analysis Scores */
+  .analysis-scores { display: flex; flex-direction: column; gap: 12px; }
+  .score-row {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .score-label { width: 90px; font-size: 12.5px; color: var(--text-secondary); font-weight: 500; flex-shrink: 0; }
+  .score-bar-track {
+    flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;
+    position: relative;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 4px; transition: width 0.8s ease;
+    width: 0;
+  }
+  .score-bar-fill.high { background: linear-gradient(90deg, #10b981, #34d399); }
+  .score-bar-fill.medium { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+  .score-bar-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
+  .score-value {
+    width: 36px; text-align: right; font-size: 13px;
+    font-weight: 700; font-family: 'Inter', sans-serif; color: var(--text);
+  }
+
+  /* AI Message Preview */
+  .ai-message-preview {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 16px; position: relative;
+  }
+  .ai-message-preview::before {
+    content: 'AI生成'; position: absolute; top: -10px; left: 12px;
+    background: linear-gradient(135deg, var(--accent), #6366f1);
+    color: #fff; font-size: 10px; font-weight: 700;
+    padding: 2px 10px; border-radius: 4px;
+  }
+  .ai-message-text {
+    font-size: 13px; color: var(--text); line-height: 1.8; margin-top: 4px;
+  }
+  .ai-message-actions {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .ai-msg-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 12px;
+    font-weight: 600; cursor: pointer; border: none;
+    transition: all 0.2s ease; font-family: inherit;
+  }
+  .ai-msg-btn-primary { background: var(--navy); color: #fff; }
+  .ai-msg-btn-primary:hover { background: var(--navy-light); }
+  .ai-msg-btn-secondary { background: #e2e8f0; color: var(--text); }
+  .ai-msg-btn-secondary:hover { background: #cbd5e1; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before {
+    content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px;
+    width: 2px; background: #e2e8f0;
+  }
+  .timeline-item { position: relative; padding-bottom: 16px; }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-dot {
+    position: absolute; left: -20px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 2px solid; background: #fff;
+  }
+  .timeline-dot.completed { border-color: var(--success); background: var(--success); }
+  .timeline-dot.active { border-color: var(--accent); background: var(--accent); }
+  .timeline-dot.pending { border-color: #cbd5e1; }
+  .timeline-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .timeline-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Animations */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(16px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .animate-in {
+    animation: fadeInUp 0.4s ease forwards;
+    opacity: 0;
+  }
+  .animate-slide {
+    animation: slideIn 0.35s ease forwards;
+    opacity: 0;
+  }
+
+  /* Refresh spin */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinning svg { animation: spin 0.8s linear infinite; }
+
+  /* Weekly Chart Section */
+  .weekly-section {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 24px;
+  }
+  .weekly-chart-card {
+    background: var(--surface); border-radius: 12px; padding: 20px;
+    border: 1px solid var(--border);
+  }
+  .weekly-chart-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .weekly-chart-title { font-size: 14px; font-weight: 700; color: var(--text); }
+  .weekly-chart-period {
+    font-size: 11px; color: var(--text-muted); background: #f1f5f9;
+    padding: 3px 10px; border-radius: 4px;
+  }
+  .chart-bars {
+    display: flex; align-items: flex-end; gap: 8px; height: 120px;
+    padding-top: 10px;
+  }
+  .chart-bar-group {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .chart-bar-wrapper {
+    width: 100%; height: 100px; display: flex; align-items: flex-end;
+    justify-content: center;
+  }
+  .chart-bar {
+    width: 60%; border-radius: 4px 4px 0 0;
+    transition: height 0.6s ease;
+    position: relative;
+  }
+  .chart-bar:hover { opacity: 0.85; }
+  .chart-bar-label {
+    font-size: 10px; color: var(--text-muted); font-weight: 500;
+  }
+  .chart-bar-value {
+    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; font-weight: 700; color: var(--text-secondary);
+    font-family: 'Inter', sans-serif; white-space: nowrap;
+  }
+
+  /* Donut chart */
+  .donut-container {
+    display: flex; align-items: center; gap: 24px;
+  }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .donut-legend-item {
+    display: flex; align-items: center; gap: 8px; font-size: 12.5px;
+  }
+  .donut-legend-dot {
+    width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0;
+  }
+  .donut-legend-label { color: var(--text-secondary); }
+  .donut-legend-value { margin-left: auto; font-weight: 700; color: var(--text); font-family: 'Inter', sans-serif; }
+
+  /* Notification toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+    background: var(--navy); color: #fff; padding: 14px 20px;
+    border-radius: 10px; font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.4s ease;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .toast-success { background: rgba(16,185,129,0.2); }
+
+  /* Responsive */
+  @media (max-width: 1200px) {
+    .panels { grid-template-columns: 1fr; }
+    .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    .weekly-section { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .main, .topbar { margin-left: 0; left: 0; }
+    .summary-cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Demo Banner -->
+<div class="demo-banner">
+  <span>&#9888;</span> これはデモ画面です。表示されているデータはすべてサンプルです。
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">AI</div>
+    <div>
+      <div class="sidebar-logo-text">営業自動化AI</div>
+      <div class="sidebar-logo-sub">Form Sales Automation</div>
+    </div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section">メイン</div>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      ダッシュボード
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      リード管理
+      <span class="nav-badge">24</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      キャンペーン
+    </a>
+    <div class="sidebar-section">分析</div>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+      送信履歴
+      <span class="nav-badge">156</span>
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      フォーム分析
+    </a>
+    <div class="sidebar-section">システム</div>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      設定
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-avatar">TK</div>
+    <div>
+      <div class="sidebar-user-name">田中 健太</div>
+      <div class="sidebar-user-role">管理者</div>
+    </div>
+  </div>
+</aside>
+
+<!-- Top Bar -->
+<header class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="topbar-title">ダッシュボード</div>
+      <div class="topbar-date" id="currentDate">2026年3月12日（木）</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="ai-status">
+      <div class="ai-pulse"></div>
+      AI稼働中
+    </div>
+    <button class="topbar-btn topbar-btn-outline" id="refreshBtn" onclick="handleRefresh()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      更新
+    </button>
+    <button class="topbar-btn topbar-btn-primary" onclick="alert('デモ: 新規キャンペーン作成画面が開きます')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      新規キャンペーン
+    </button>
+  </div>
+</header>
+
+<!-- Main Content -->
+<main class="main">
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card animate-in" style="animation-delay: 0s">
+      <div class="summary-card-header">
+        <span class="summary-card-label">今月のリード獲得数</span>
+        <div class="summary-card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+      </div>
+      <div class="summary-card-value" id="stat-leads">1,247</div>
+      <span class="summary-card-change change-up">&#9650; 23.5% 前月比</span>
+    </div>
+    <div class="summary-card animate-in" style="animation-delay: 0.08s">
+      <div class="summary-card-header">
+        <span class="summary-card-label">フォーム送信成功率</span>
+        <div class="summary-card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+      </div>
+      <div class="summary-card-value" id="stat-success">94.2%</div>
+      <span class="summary-card-change change-up">&#9650; 2.1% 前月比</span>
+    </div>
+    <div class="summary-card animate-in" style="animation-delay: 0.16s">
+      <div class="summary-card-header">
+        <span class="summary-card-label">返信率</span>
+        <div class="summary-card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+      </div>
+      <div class="summary-card-value" id="stat-reply">12.8%</div>
+      <span class="summary-card-change change-up">&#9650; 1.4% 前月比</span>
+    </div>
+    <div class="summary-card animate-in" style="animation-delay: 0.24s">
+      <div class="summary-card-header">
+        <span class="summary-card-label">商談化数</span>
+        <div class="summary-card-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+      </div>
+      <div class="summary-card-value" id="stat-meetings">38</div>
+      <span class="summary-card-change change-up">&#9650; 8件 前月比</span>
+    </div>
+  </div>
+
+  <!-- Weekly Performance Section -->
+  <div class="weekly-section">
+    <div class="weekly-chart-card animate-in" style="animation-delay: 0.28s">
+      <div class="weekly-chart-header">
+        <div class="weekly-chart-title">週間フォーム送信数</div>
+        <div class="weekly-chart-period">3/6 - 3/12</div>
+      </div>
+      <div class="chart-bars" id="weeklyBars">
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" style="height: 0; background: linear-gradient(180deg, #3b82f6, #60a5fa);" data-height="65%">
+              <span class="chart-bar-value">156</span>
+            </div>
+          </div>
+          <span class="chart-bar-label">月</span>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" style="height: 0; background: linear-gradient(180deg, #3b82f6, #60a5fa);" data-height="82%">
+              <span class="chart-bar-value">198</span>
+            </div>
+          </div>
+          <span class="chart-bar-label">火</span>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" style="height: 0; background: linear-gradient(180deg, #3b82f6, #60a5fa);" data-height="74%">
+              <span class="chart-bar-value">178</span>
+            </div>
+          </div>
+          <span class="chart-bar-label">水</span>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" style="height: 0; background: linear-gradient(180deg, #3b82f6, #60a5fa);" data-height="90%">
+              <span class="chart-bar-value">215</span>
+            </div>
+          </div>
+          <span class="chart-bar-label">木</span>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" style="height: 0; background: linear-gradient(180deg, #3b82f6, #60a5fa);" data-height="68%">
+              <span class="chart-bar-value">163</span>
+            </div>
+          </div>
+          <span class="chart-bar-label">金</span>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" style="height: 0; background: linear-gradient(180deg, #94a3b8, #cbd5e1);" data-height="25%">
+              <span class="chart-bar-value">60</span>
+            </div>
+          </div>
+          <span class="chart-bar-label">土</span>
+        </div>
+        <div class="chart-bar-group">
+          <div class="chart-bar-wrapper">
+            <div class="chart-bar" style="height: 0; background: linear-gradient(180deg, #94a3b8, #cbd5e1);" data-height="12%">
+              <span class="chart-bar-value">28</span>
+            </div>
+          </div>
+          <span class="chart-bar-label">日</span>
+        </div>
+      </div>
+    </div>
+    <div class="weekly-chart-card animate-in" style="animation-delay: 0.32s">
+      <div class="weekly-chart-header">
+        <div class="weekly-chart-title">ステータス別内訳</div>
+        <div class="weekly-chart-period">今月累計</div>
+      </div>
+      <div class="donut-container">
+        <svg class="donut-svg" width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="52" fill="none" stroke="#e2e8f0" stroke-width="14"/>
+          <!-- Sent: 58% -->
+          <circle cx="65" cy="65" r="52" fill="none" stroke="#10b981" stroke-width="14"
+            stroke-dasharray="326.7" stroke-dashoffset="0"
+            transform="rotate(-90 65 65)" stroke-linecap="round"
+            style="stroke-dasharray: 189.5 326.7; transition: all 0.8s ease;"/>
+          <!-- Replied: 13% -->
+          <circle cx="65" cy="65" r="52" fill="none" stroke="#6366f1" stroke-width="14"
+            stroke-dasharray="326.7" stroke-dashoffset="0"
+            transform="rotate(115 65 65)" stroke-linecap="round"
+            style="stroke-dasharray: 42.5 326.7; transition: all 0.8s ease;"/>
+          <!-- Analyzing: 22% -->
+          <circle cx="65" cy="65" r="52" fill="none" stroke="#3b82f6" stroke-width="14"
+            stroke-dasharray="326.7" stroke-dashoffset="0"
+            transform="rotate(162 65 65)" stroke-linecap="round"
+            style="stroke-dasharray: 71.9 326.7; transition: all 0.8s ease;"/>
+          <!-- Error: 7% -->
+          <circle cx="65" cy="65" r="52" fill="none" stroke="#ef4444" stroke-width="14"
+            stroke-dasharray="326.7" stroke-dashoffset="0"
+            transform="rotate(244 65 65)" stroke-linecap="round"
+            style="stroke-dasharray: 22.9 326.7; transition: all 0.8s ease;"/>
+          <text x="65" y="62" text-anchor="middle" font-size="22" font-weight="700" fill="#1e293b" font-family="Inter">998</text>
+          <text x="65" y="78" text-anchor="middle" font-size="10" fill="#94a3b8" font-family="Noto Sans JP">総送信数</text>
+        </svg>
+        <div class="donut-legend">
+          <div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background: #10b981;"></div>
+            <span class="donut-legend-label">送信完了</span>
+            <span class="donut-legend-value">579件</span>
+          </div>
+          <div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background: #3b82f6;"></div>
+            <span class="donut-legend-label">分析中</span>
+            <span class="donut-legend-value">220件</span>
+          </div>
+          <div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background: #6366f1;"></div>
+            <span class="donut-legend-label">返信あり</span>
+            <span class="donut-legend-value">130件</span>
+          </div>
+          <div class="donut-legend-item">
+            <div class="donut-legend-dot" style="background: #ef4444;"></div>
+            <span class="donut-legend-label">エラー</span>
+            <span class="donut-legend-value">69件</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Two Panel Layout -->
+  <div class="panels">
+    <!-- Left Panel: Activity List -->
+    <div class="panel animate-in" style="animation-delay: 0.3s">
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">本日のAI営業アクティビティ</div>
+          <div class="panel-subtitle">6件の企業を処理中</div>
+        </div>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" data-filter="all" onclick="filterItems('all', this)">
+          すべて<span class="filter-tab-count">6</span>
+        </button>
+        <button class="filter-tab" data-filter="sent" onclick="filterItems('sent', this)">
+          送信済み<span class="filter-tab-count">3</span>
+        </button>
+        <button class="filter-tab" data-filter="replied" onclick="filterItems('replied', this)">
+          返信あり<span class="filter-tab-count">1</span>
+        </button>
+      </div>
+      <div class="activity-list" id="activityList">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Right Panel: Detail -->
+    <div class="panel detail-panel animate-in" style="animation-delay: 0.35s" id="detailPanel">
+      <div class="detail-empty" id="detailEmpty">
+        <div class="detail-empty-icon">&#128269;</div>
+        <div class="detail-empty-text">企業を選択すると<br>AI分析結果が表示されます</div>
+      </div>
+      <div class="detail-content" id="detailContent" style="display: none;">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast Notification -->
+<div class="toast" id="toast">
+  <div class="toast-icon toast-success">&#10003;</div>
+  <div>
+    <div style="font-weight: 600;">データ更新完了</div>
+    <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">最新のAI分析結果を反映しました</div>
+  </div>
+</div>
+
+<script>
+  // Company data
+  const companies = [
+    {
+      id: 1, name: 'A社', industry: 'IT・SaaS',
+      url: 'https://example-a.co.jp', employees: '150名',
+      area: '東京都渋谷区', revenue: '約15億円',
+      status: 'sent', statusLabel: '送信完了', statusClass: 'status-sent',
+      score: 87, time: '10:24',
+      scores: { needs: 92, possibility: 85, budget: 78, urgency: 88 },
+      message: '貴社のWebサイトを拝見し、SaaS事業の急成長に伴う営業体制の課題についてお力添えできると考えご連絡いたしました。弊社のAI営業自動化ツールにより、フォーム営業の工数を90%削減し、返信率を平均3倍に改善した実績がございます。15分程度のオンラインデモをご用意しておりますので、ご都合の良い日時をお知らせいただけますと幸いです。',
+      timeline: [
+        { label: 'リード取得', time: '09:15', status: 'completed' },
+        { label: 'AI Webサイト分析完了', time: '09:18', status: 'completed' },
+        { label: 'メッセージ生成', time: '09:22', status: 'completed' },
+        { label: 'フォーム送信完了', time: '10:24', status: 'completed' },
+        { label: '返信待ち', time: '', status: 'active' }
+      ]
+    },
+    {
+      id: 2, name: 'B社', industry: '製造業',
+      url: 'https://example-b.co.jp', employees: '520名',
+      area: '大阪府大阪市', revenue: '約80億円',
+      status: 'replied', statusLabel: '返信あり', statusClass: 'status-replied',
+      score: 91, time: '09:45',
+      scores: { needs: 95, possibility: 88, budget: 90, urgency: 82 },
+      message: '貴社の製造DX推進について、弊社のAI営業プラットフォームが新規顧客開拓の効率化に貢献できると確信しております。製造業界では、従来の展示会やテレアポに代わり、AI活用のフォーム営業で商談獲得コストを60%削減する企業が増えています。具体的な導入事例をお持ちしたく、30分ほどお時間をいただけないでしょうか。',
+      timeline: [
+        { label: 'リード取得', time: '08:30', status: 'completed' },
+        { label: 'AI Webサイト分析完了', time: '08:35', status: 'completed' },
+        { label: 'メッセージ生成', time: '08:42', status: 'completed' },
+        { label: 'フォーム送信完了', time: '09:45', status: 'completed' },
+        { label: '返信受信', time: '14:22', status: 'completed' }
+      ]
+    },
+    {
+      id: 3, name: 'C社', industry: '人材サービス',
+      url: 'https://example-c.co.jp', employees: '85名',
+      area: '東京都港区', revenue: '約8億円',
+      status: 'analyzing', statusLabel: '分析中', statusClass: 'status-analyzing',
+      score: 73, time: '11:02',
+      scores: { needs: 70, possibility: 78, budget: 65, urgency: 72 },
+      message: '貴社の人材マッチングサービスの拡大に伴い、法人営業のスケール課題をお抱えではないかと推察いたしました。弊社AIは、ターゲット企業のWebサイトを自動分析し、最適化されたメッセージでフォーム営業を自動化いたします。人材業界特化の成功テンプレートもご用意しております。',
+      timeline: [
+        { label: 'リード取得', time: '10:55', status: 'completed' },
+        { label: 'AI Webサイト分析中...', time: '11:02', status: 'active' },
+        { label: 'メッセージ生成', time: '', status: 'pending' },
+        { label: 'フォーム送信', time: '', status: 'pending' },
+        { label: '返信確認', time: '', status: 'pending' }
+      ]
+    },
+    {
+      id: 4, name: 'D社', industry: '不動産',
+      url: 'https://example-d.co.jp', employees: '200名',
+      area: '神奈川県横浜市', revenue: '約25億円',
+      status: 'sent', statusLabel: '送信完了', statusClass: 'status-sent',
+      score: 82, time: '10:58',
+      scores: { needs: 80, possibility: 85, budget: 82, urgency: 76 },
+      message: '貴社の不動産テック事業について拝見いたしました。物件オーナーや管理会社への新規アプローチにおいて、AIを活用した自動フォーム営業が高い成果を上げています。不動産業界の企業様では、月間200件以上のフォーム営業を自動化し、営業チームの工数を大幅に削減された事例がございます。',
+      timeline: [
+        { label: 'リード取得', time: '09:40', status: 'completed' },
+        { label: 'AI Webサイト分析完了', time: '09:48', status: 'completed' },
+        { label: 'メッセージ生成', time: '09:55', status: 'completed' },
+        { label: 'フォーム送信完了', time: '10:58', status: 'completed' },
+        { label: '返信待ち', time: '', status: 'active' }
+      ]
+    },
+    {
+      id: 5, name: 'E社', industry: 'コンサルティング',
+      url: 'https://example-e.co.jp', employees: '45名',
+      area: '東京都千代田区', revenue: '約5億円',
+      status: 'sent', statusLabel: '送信完了', statusClass: 'status-sent',
+      score: 79, time: '11:15',
+      scores: { needs: 82, possibility: 75, budget: 70, urgency: 84 },
+      message: '貴社のDXコンサルティング事業の成長に伴い、新規クライアント獲得の効率化にAI営業自動化をご提案させていただきたくご連絡いたしました。コンサルティング企業様向けに、ターゲット業界別のAI分析とパーソナライズドメッセージ生成を組み合わせた営業アプローチをご提供しております。',
+      timeline: [
+        { label: 'リード取得', time: '10:30', status: 'completed' },
+        { label: 'AI Webサイト分析完了', time: '10:38', status: 'completed' },
+        { label: 'メッセージ生成', time: '10:45', status: 'completed' },
+        { label: 'フォーム送信完了', time: '11:15', status: 'completed' },
+        { label: '返信待ち', time: '', status: 'active' }
+      ]
+    },
+    {
+      id: 6, name: 'F社', industry: 'EC・小売',
+      url: 'https://example-f.co.jp', employees: '310名',
+      area: '福岡県福岡市', revenue: '約40億円',
+      status: 'error', statusLabel: 'エラー', statusClass: 'status-error',
+      score: 68, time: '11:30',
+      scores: { needs: 65, possibility: 72, budget: 68, urgency: 60 },
+      message: '貴社のECプラットフォーム事業について拝見しました。EC事業者様向けBtoB営業において、フォーム営業の自動化が商談獲得の新たなチャネルとして注目されています。AI分析による最適なアプローチタイミングの特定と、パーソナライズされたメッセージにより、高い返信率を実現いたします。',
+      timeline: [
+        { label: 'リード取得', time: '11:00', status: 'completed' },
+        { label: 'AI Webサイト分析完了', time: '11:10', status: 'completed' },
+        { label: 'メッセージ生成', time: '11:18', status: 'completed' },
+        { label: 'フォーム送信エラー', time: '11:30', status: 'active' },
+        { label: '再送信待ち', time: '', status: 'pending' }
+      ]
+    }
+  ];
+
+  let currentFilter = 'all';
+  let selectedCompanyId = null;
+
+  // Render activity list
+  function renderActivityList(filter) {
+    const list = document.getElementById('activityList');
+    let filtered = companies;
+    if (filter === 'sent') filtered = companies.filter(c => c.status === 'sent');
+    else if (filter === 'replied') filtered = companies.filter(c => c.status === 'replied');
+
+    list.innerHTML = '';
+    filtered.forEach((company, index) => {
+      const circumference = 2 * Math.PI * 18;
+      const offset = circumference - (company.score / 100) * circumference;
+      let strokeColor = company.score >= 80 ? '#10b981' : company.score >= 60 ? '#f59e0b' : '#ef4444';
+
+      const item = document.createElement('div');
+      item.className = 'activity-item' + (selectedCompanyId === company.id ? ' selected' : '');
+      item.style.animationDelay = (index * 0.06) + 's';
+      item.classList.add('animate-slide');
+      item.onclick = () => selectCompany(company.id);
+      item.setAttribute('data-id', company.id);
+
+      item.innerHTML = `
+        <div class="activity-score-ring">
+          <svg viewBox="0 0 44 44">
+            <circle class="score-bg" cx="22" cy="22" r="18"/>
+            <circle class="score-fill" cx="22" cy="22" r="18"
+              stroke="${strokeColor}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${offset}"/>
+          </svg>
+          <span class="activity-score-value">${company.score}</span>
+        </div>
+        <div class="activity-info">
+          <div class="activity-company">${company.name}</div>
+          <div class="activity-meta">
+            <span class="industry-tag">${company.industry}</span>
+            <span class="activity-time">${company.time}</span>
+          </div>
+        </div>
+        <span class="activity-status ${company.statusClass}">${company.statusLabel}</span>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  // Select company and show detail
+  function selectCompany(id) {
+    selectedCompanyId = id;
+    const company = companies.find(c => c.id === id);
+    if (!company) return;
+
+    // Update selection in list
+    document.querySelectorAll('.activity-item').forEach(el => {
+      el.classList.toggle('selected', parseInt(el.getAttribute('data-id')) === id);
+    });
+
+    document.getElementById('detailEmpty').style.display = 'none';
+    const content = document.getElementById('detailContent');
+    content.style.display = 'block';
+
+    const getBarClass = (val) => val >= 75 ? 'high' : val >= 50 ? 'medium' : 'low';
+
+    content.innerHTML = `
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">${company.name} - AI分析詳細</div>
+          <div class="panel-subtitle">スコア: ${company.score}点 / ${company.industry}</div>
+        </div>
+        <span class="activity-status ${company.statusClass}">${company.statusLabel}</span>
+      </div>
+
+      <div class="detail-section animate-slide" style="animation-delay: 0.05s">
+        <div class="detail-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          企業情報
+        </div>
+        <div class="company-info-grid">
+          <div class="company-info-item">
+            <div class="company-info-label">企業名</div>
+            <div class="company-info-value">${company.name}</div>
+          </div>
+          <div class="company-info-item">
+            <div class="company-info-label">業種</div>
+            <div class="company-info-value">${company.industry}</div>
+          </div>
+          <div class="company-info-item">
+            <div class="company-info-label">所在地</div>
+            <div class="company-info-value">${company.area}</div>
+          </div>
+          <div class="company-info-item">
+            <div class="company-info-label">従業員数</div>
+            <div class="company-info-value">${company.employees}</div>
+          </div>
+          <div class="company-info-item">
+            <div class="company-info-label">URL</div>
+            <div class="company-info-value" style="font-size: 12px; color: var(--accent);">${company.url}</div>
+          </div>
+          <div class="company-info-item">
+            <div class="company-info-label">推定売上</div>
+            <div class="company-info-value">${company.revenue}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section animate-slide" style="animation-delay: 0.12s">
+        <div class="detail-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M20.2 6.8A10 10 0 0 0 12 2v10h10a10 10 0 0 0-1.8-5.2z" fill="none"/></svg>
+          AI分析結果
+        </div>
+        <div class="analysis-scores">
+          <div class="score-row">
+            <span class="score-label">ニーズ適合度</span>
+            <div class="score-bar-track">
+              <div class="score-bar-fill ${getBarClass(company.scores.needs)}" data-width="${company.scores.needs}"></div>
+            </div>
+            <span class="score-value">${company.scores.needs}</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">導入可能性</span>
+            <div class="score-bar-track">
+              <div class="score-bar-fill ${getBarClass(company.scores.possibility)}" data-width="${company.scores.possibility}"></div>
+            </div>
+            <span class="score-value">${company.scores.possibility}</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">予算規模</span>
+            <div class="score-bar-track">
+              <div class="score-bar-fill ${getBarClass(company.scores.budget)}" data-width="${company.scores.budget}"></div>
+            </div>
+            <span class="score-value">${company.scores.budget}</span>
+          </div>
+          <div class="score-row">
+            <span class="score-label">緊急度</span>
+            <div class="score-bar-track">
+              <div class="score-bar-fill ${getBarClass(company.scores.urgency)}" data-width="${company.scores.urgency}"></div>
+            </div>
+            <span class="score-value">${company.scores.urgency}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section animate-slide" style="animation-delay: 0.19s">
+        <div class="detail-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          AI生成メッセージプレビュー
+        </div>
+        <div class="ai-message-preview">
+          <div class="ai-message-text">${company.message}</div>
+          <div class="ai-message-actions">
+            <button class="ai-msg-btn ai-msg-btn-primary" onclick="alert('デモ: メッセージを承認しました')">承認して送信</button>
+            <button class="ai-msg-btn ai-msg-btn-secondary" onclick="alert('デモ: AIがメッセージを再生成します')">再生成</button>
+            <button class="ai-msg-btn ai-msg-btn-secondary" onclick="alert('デモ: 編集画面が開きます')">手動編集</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section animate-slide" style="animation-delay: 0.26s">
+        <div class="detail-section-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          送信ステータス
+        </div>
+        <div class="timeline">
+          ${company.timeline.map(t => `
+            <div class="timeline-item">
+              <div class="timeline-dot ${t.status}"></div>
+              <div class="timeline-label">${t.label}</div>
+              <div class="timeline-time">${t.time || '---'}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // Animate score bars
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        content.querySelectorAll('.score-bar-fill').forEach(bar => {
+          bar.style.width = bar.getAttribute('data-width') + '%';
+        });
+      }, 100);
+    });
+  }
+
+  // Filter tabs
+  function filterItems(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    renderActivityList(filter);
+  }
+
+  // Refresh simulation
+  function handleRefresh() {
+    const btn = document.getElementById('refreshBtn');
+    btn.classList.add('spinning');
+    btn.disabled = true;
+
+    // Randomize some stats
+    const randomize = (base, range) => {
+      const val = base + Math.floor(Math.random() * range * 2) - range;
+      return val;
+    };
+
+    setTimeout(() => {
+      document.getElementById('stat-leads').textContent = randomize(1247, 50).toLocaleString();
+      document.getElementById('stat-success').textContent = (94.2 + (Math.random() * 2 - 1)).toFixed(1) + '%';
+      document.getElementById('stat-reply').textContent = (12.8 + (Math.random() * 2 - 1)).toFixed(1) + '%';
+      document.getElementById('stat-meetings').textContent = randomize(38, 5);
+
+      // Shuffle some scores
+      companies.forEach(c => {
+        c.score = Math.min(99, Math.max(50, c.score + Math.floor(Math.random() * 10 - 5)));
+        c.scores.needs = Math.min(99, Math.max(40, c.scores.needs + Math.floor(Math.random() * 8 - 4)));
+        c.scores.possibility = Math.min(99, Math.max(40, c.scores.possibility + Math.floor(Math.random() * 8 - 4)));
+        c.scores.budget = Math.min(99, Math.max(40, c.scores.budget + Math.floor(Math.random() * 8 - 4)));
+        c.scores.urgency = Math.min(99, Math.max(40, c.scores.urgency + Math.floor(Math.random() * 8 - 4)));
+      });
+
+      renderActivityList(currentFilter);
+      if (selectedCompanyId) selectCompany(selectedCompanyId);
+
+      // Re-animate chart bars
+      document.querySelectorAll('#weeklyBars .chart-bar').forEach(bar => {
+        bar.style.height = '0';
+      });
+      setTimeout(animateChartBars, 100);
+
+      btn.classList.remove('spinning');
+      btn.disabled = false;
+      showToast('データ更新完了', '最新のAI分析結果を反映しました');
+    }, 800);
+  }
+
+  // Animate chart bars
+  function animateChartBars() {
+    document.querySelectorAll('#weeklyBars .chart-bar').forEach((bar, i) => {
+      setTimeout(() => {
+        bar.style.height = bar.getAttribute('data-height');
+      }, 100 + i * 80);
+    });
+  }
+
+  // Show toast notification
+  function showToast(message, submessage) {
+    const toast = document.getElementById('toast');
+    if (message) {
+      toast.querySelector('div > div:first-child').textContent = message;
+    }
+    if (submessage) {
+      toast.querySelector('div > div:last-child').textContent = submessage;
+    }
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+
+  // Animate summary card numbers counting up
+  function animateCountUp(element, targetText) {
+    const isPercent = targetText.includes('%');
+    const isComma = targetText.includes(',');
+    let target;
+    if (isPercent) {
+      target = parseFloat(targetText);
+    } else if (isComma) {
+      target = parseInt(targetText.replace(/,/g, ''));
+    } else {
+      target = parseInt(targetText);
+    }
+    let current = 0;
+    const duration = 1200;
+    const steps = 40;
+    const increment = target / steps;
+    const stepTime = duration / steps;
+    let step = 0;
+
+    const timer = setInterval(() => {
+      step++;
+      current = Math.min(target, increment * step);
+      if (isPercent) {
+        element.textContent = current.toFixed(1) + '%';
+      } else if (isComma) {
+        element.textContent = Math.round(current).toLocaleString();
+      } else {
+        element.textContent = Math.round(current);
+      }
+      if (step >= steps) {
+        element.textContent = targetText;
+        clearInterval(timer);
+      }
+    }, stepTime);
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', () => {
+    renderActivityList('all');
+
+    // Animate chart bars on load
+    setTimeout(animateChartBars, 400);
+
+    // Count up summary numbers
+    animateCountUp(document.getElementById('stat-leads'), '1,247');
+    animateCountUp(document.getElementById('stat-success'), '94.2%');
+    animateCountUp(document.getElementById('stat-reply'), '12.8%');
+    animateCountUp(document.getElementById('stat-meetings'), '38');
+
+    // Auto-select first company after a short delay
+    setTimeout(() => selectCompany(1), 600);
+  });
+</script>
+</body>
+</html>

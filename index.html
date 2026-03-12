@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI開発デモ一覧 - TRIBE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg: #f0f4f8;
+            --surface: #ffffff;
+            --text: #1a1a2e;
+            --text-sub: #4a5568;
+            --text-muted: #8a94a6;
+            --border: #e2e8f0;
+            --accent: #1e3a5f;
+            --accent-light: #2d5a8e;
+            --green: #276749;
+            --green-bg: #f0fff4;
+        }
+
+        body {
+            font-family: 'Noto Sans JP', 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 50%, #1e3a5f 100%);
+            color: #fff;
+            padding: 60px 40px 50px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 50%, rgba(255,255,255,0.03) 0%, transparent 50%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.8;
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-num {
+            font-family: 'Inter', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: -30px auto 60px;
+            padding: 0 24px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .demo-card {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(30, 58, 95, 0.12);
+            border-color: var(--accent);
+        }
+
+        .card-visual {
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-visual-1 {
+            background: linear-gradient(135deg, #ebf8ff 0%, #e6fffa 100%);
+        }
+
+        .card-visual-2 {
+            background: linear-gradient(135deg, #fefcbf 0%, #feebc8 100%);
+        }
+
+        .card-visual-3 {
+            background: linear-gradient(135deg, #e9d8fd 0%, #fed7e2 100%);
+        }
+
+        .card-visual-tag {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(30, 58, 95, 0.9);
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        .card-category {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-sub);
+            line-height: 1.7;
+            margin-bottom: 16px;
+        }
+
+        .card-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .card-feature {
+            background: var(--bg);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .card-time {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .card-time strong {
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .card-btn {
+            background: var(--accent);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .card-btn:hover {
+            background: var(--accent-light);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px 24px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .footer a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+            .header h1 {
+                font-size: 28px;
+            }
+            .stats-bar {
+                gap: 24px;
+            }
+        }
+
+        /* Fade in animation */
+        .demo-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .demo-card:nth-child(1) { animation-delay: 0.1s; }
+        .demo-card:nth-child(2) { animation-delay: 0.25s; }
+        .demo-card:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="header-badge">DEMO SHOWCASE</div>
+            <h1>AI開発 デモンストレーション</h1>
+            <p>AIを活用した業務自動化ツールのデモをご覧いただけます。<br>すべて短期間で開発・実装が可能です。</p>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <div class="stat-num">3</div>
+                    <div class="stat-label">デモ事例</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">50+</div>
+                    <div class="stat-label">開発実績</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-num">2週間〜</div>
+                    <div class="stat-label">開発期間</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="demo-grid">
+            <!-- Demo 1: Form Sales AI -->
+            <a href="demo-form-sales-ai.html" class="demo-card">
+                <div class="card-visual card-visual-1">
+                    <span>&#128640;</span>
+                    <div class="card-visual-tag">営業DX</div>
+                </div>
+                <div class="card-body">
+                    <div class="card-category">Sales Automation</div>
+                    <div class="card-title">フォーム営業<br>自動化AI</div>
+                    <div class="card-desc">ターゲット企業をAIが自動分析し、最適な営業メッセージを生成。問い合わせフォームへの自動送信まで一気通貫で実行します。</div>
+                    <div class="card-features">
+                        <span class="card-feature">リード自動抽出</span>
+                        <span class="card-feature">AI文面生成</span>
+                        <span class="card-feature">自動フォーム送信</span>
+                        <span class="card-feature">返信管理</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="card-time">開発期間: <strong>約2週間</strong></span>
+                        <span class="card-btn">デモを見る</span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Demo 2: Inventory AI -->
+            <a href="demo-inventory-ai.html" class="demo-card">
+                <div class="card-visual card-visual-2">
+                    <span>&#128230;</span>
+                    <div class="card-visual-tag">在庫管理</div>
+                </div>
+                <div class="card-body">
+                    <div class="card-category">Inventory Optimization</div>
+                    <div class="card-title">在庫最適化<br>AIダッシュボード</div>
+                    <div class="card-desc">需要予測AIが在庫の過不足を自動検知。不動在庫の削減提案、自動発注、季節変動への対応まで在庫管理を全面的にサポートします。</div>
+                    <div class="card-features">
+                        <span class="card-feature">需要予測</span>
+                        <span class="card-feature">不動在庫検知</span>
+                        <span class="card-feature">自動発注提案</span>
+                        <span class="card-feature">欠品アラート</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="card-time">開発期間: <strong>約3週間</strong></span>
+                        <span class="card-btn">デモを見る</span>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Demo 3: Quote AI -->
+            <a href="demo-quote-ai.html" class="demo-card">
+                <div class="card-visual card-visual-3">
+                    <span>&#128196;</span>
+                    <div class="card-visual-tag">見積自動化</div>
+                </div>
+                <div class="card-body">
+                    <div class="card-category">Document Generation</div>
+                    <div class="card-title">見積書<br>自動生成AI</div>
+                    <div class="card-desc">音声やテキストからAIが自動で見積項目を抽出し、プロフェッショナルな見積書を即座に生成。PDF・Excel出力にも対応します。</div>
+                    <div class="card-features">
+                        <span class="card-feature">音声認識</span>
+                        <span class="card-feature">項目自動抽出</span>
+                        <span class="card-feature">見積書生成</span>
+                        <span class="card-feature">PDF/Excel出力</span>
+                    </div>
+                    <div class="card-footer">
+                        <span class="card-time">開発期間: <strong>約2週間</strong></span>
+                        <span class="card-btn">デモを見る</span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Powered by AI Development Team</p>
+    </div>
+</body>
+</html>

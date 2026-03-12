@@ -1,0 +1,1753 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>在庫最適化AI - デモダッシュボード</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ========== RESET & BASE ========== */
+  *, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :root {
+    --navy: #1e3a5f;
+    --navy-light: #2a4f7a;
+    --navy-dark: #142942;
+    --accent: #3b82f6;
+    --accent-light: #60a5fa;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --danger-light: #fef2f2;
+    --bg: #f3f5f9;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-muted: #94a3b8;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,0.1);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Noto Sans JP', 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ========== DEMO BANNER ========== */
+  .demo-banner {
+    background: linear-gradient(90deg, var(--navy), var(--navy-light));
+    color: #fff;
+    text-align: center;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    position: relative;
+    z-index: 100;
+  }
+
+  .demo-banner span {
+    background: rgba(255,255,255,0.2);
+    padding: 2px 10px;
+    border-radius: 20px;
+    margin-right: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  /* ========== TOP HEADER BAR ========== */
+  .top-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 40px;
+    flex-shrink: 0;
+  }
+
+  .header-logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--navy), var(--accent));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .header-logo-text {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--navy);
+    white-space: nowrap;
+  }
+
+  .header-logo-text small {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: block;
+    margin-top: -2px;
+  }
+
+  .header-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+
+  .header-nav a {
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .header-nav a:hover {
+    color: var(--navy);
+    background: rgba(30,58,95,0.06);
+  }
+
+  .header-nav a.active {
+    color: var(--navy);
+    background: rgba(30,58,95,0.08);
+    font-weight: 600;
+  }
+
+  .header-nav a.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 16px;
+    right: 16px;
+    height: 2px;
+    background: var(--navy);
+    border-radius: 2px;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .header-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+    white-space: nowrap;
+  }
+
+  .header-btn:hover {
+    background: var(--navy-light);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .header-btn.loading {
+    pointer-events: none;
+    opacity: 0.8;
+  }
+
+  .header-btn .spinner {
+    display: none;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+
+  .header-btn.loading .spinner {
+    display: inline-block;
+  }
+
+  .header-btn.loading .btn-text {
+    display: none;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .notification-bell {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: var(--transition);
+    background: transparent;
+    font-size: 16px;
+  }
+
+  .notification-bell:hover {
+    background: var(--bg);
+  }
+
+  .notification-bell .badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background: var(--danger);
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+  }
+
+  .user-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .user-avatar:hover {
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+  }
+
+  /* ========== MAIN CONTENT ========== */
+  .main-content {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 24px 32px 48px;
+  }
+
+  /* ========== PAGE HEADER ========== */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .last-updated {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .last-updated .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ========== SUMMARY CARDS ========== */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .summary-card:nth-child(1) { animation-delay: 0.05s; }
+  .summary-card:nth-child(2) { animation-delay: 0.1s; }
+  .summary-card:nth-child(3) { animation-delay: 0.15s; }
+  .summary-card:nth-child(4) { animation-delay: 0.2s; }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .summary-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: transparent;
+    transform: translateY(-2px);
+  }
+
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .summary-card:nth-child(1)::before { background: var(--navy); }
+  .summary-card:nth-child(2)::before { background: var(--danger); }
+  .summary-card:nth-child(3)::before { background: var(--accent); }
+  .summary-card:nth-child(4)::before { background: var(--warning); }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .card-label {
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .card-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
+
+  .card-icon.navy { background: rgba(30,58,95,0.1); color: var(--navy); }
+  .card-icon.red { background: rgba(239,68,68,0.1); color: var(--danger); }
+  .card-icon.blue { background: rgba(59,130,246,0.1); color: var(--accent); }
+  .card-icon.amber { background: rgba(245,158,11,0.1); color: var(--warning); }
+
+  .card-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.1;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .card-value .unit {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-left: 2px;
+  }
+
+  .card-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .card-sub .change {
+    font-weight: 600;
+  }
+
+  .card-sub .change.up { color: var(--success); }
+  .card-sub .change.down { color: var(--danger); }
+
+  .card-warning-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--danger-light);
+    color: var(--danger);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 6px;
+  }
+
+  /* ========== THREE COLUMN LAYOUT ========== */
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 320px 340px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: fadeUp 0.5s ease forwards;
+    animation-delay: 0.25s;
+  }
+
+  .panel:nth-child(2) { animation-delay: 0.3s; }
+  .panel:nth-child(3) { animation-delay: 0.35s; }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .panel-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title .icon {
+    font-size: 16px;
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  /* ========== FILTER BUTTONS ========== */
+  .filter-btn {
+    padding: 5px 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+  }
+
+  .filter-btn:hover {
+    border-color: var(--navy);
+    color: var(--navy);
+  }
+
+  .filter-btn.active {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+
+  /* ========== TABLE ========== */
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .inv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .inv-table thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .inv-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .inv-table tbody tr:last-child {
+    border-bottom: none;
+  }
+
+  .inv-table tbody tr:hover {
+    background: rgba(30,58,95,0.03);
+  }
+
+  .inv-table tbody tr.selected {
+    background: rgba(59,130,246,0.06);
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+
+  .inv-table tbody td {
+    padding: 13px 16px;
+    white-space: nowrap;
+    color: var(--text-primary);
+  }
+
+  .product-name {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .product-cat {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .num-cell {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    text-align: right;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    gap: 4px;
+  }
+
+  .status-badge.optimal {
+    background: rgba(16,185,129,0.1);
+    color: #059669;
+  }
+
+  .status-badge.excess {
+    background: rgba(59,130,246,0.1);
+    color: #2563eb;
+  }
+
+  .status-badge.shortage {
+    background: rgba(245,158,11,0.1);
+    color: #d97706;
+  }
+
+  .status-badge.dead {
+    background: rgba(239,68,68,0.1);
+    color: #dc2626;
+  }
+
+  .ai-prediction {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+
+  .ai-prediction .arrow {
+    font-size: 10px;
+  }
+
+  .ai-prediction .arrow.up { color: var(--success); }
+  .ai-prediction .arrow.down { color: var(--danger); }
+
+  /* ========== DETAIL PANEL (inline) ========== */
+  .detail-row {
+    display: none;
+    background: rgba(59,130,246,0.03);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-row.show {
+    display: table-row;
+  }
+
+  .detail-content {
+    padding: 16px 20px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .detail-item {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .detail-item label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .detail-item value {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ========== BAR CHART ========== */
+  .chart-area {
+    padding: 20px 22px;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  .legend-dot.actual { background: var(--navy); }
+  .legend-dot.predicted { background: var(--accent-light); }
+
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    height: 200px;
+    padding-top: 10px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .bar-group {
+    flex: 1;
+    display: flex;
+    gap: 4px;
+    align-items: flex-end;
+    height: 100%;
+    position: relative;
+  }
+
+  .bar {
+    flex: 1;
+    border-radius: 4px 4px 0 0;
+    min-width: 16px;
+    position: relative;
+    transition: opacity 0.2s;
+    transform-origin: bottom;
+    transform: scaleY(0);
+    animation: growBar 0.6s ease forwards;
+  }
+
+  .bar:hover {
+    opacity: 0.85;
+  }
+
+  .bar.actual { background: var(--navy); }
+  .bar.predicted { background: var(--accent-light); }
+
+  @keyframes growBar {
+    to { transform: scaleY(1); }
+  }
+
+  .bar-label {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  .bar-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--navy-dark);
+    color: #fff;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-weight: 500;
+    z-index: 10;
+  }
+
+  .bar:hover .bar-tooltip {
+    display: block;
+  }
+
+  .chart-y-axis {
+    position: absolute;
+    left: -4px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .y-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    transform: translateX(-100%);
+    padding-right: 8px;
+  }
+
+  /* ========== ACTION CARDS ========== */
+  .action-list {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .action-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action-card:hover {
+    box-shadow: var(--shadow-sm);
+    border-color: rgba(30,58,95,0.2);
+  }
+
+  .action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+  }
+
+  .action-card.priority-high::before { background: var(--danger); }
+  .action-card.priority-medium::before { background: var(--warning); }
+  .action-card.priority-low::before { background: var(--accent); }
+
+  .action-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .action-type {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .priority-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .priority-tag.high {
+    background: rgba(239,68,68,0.1);
+    color: var(--danger);
+  }
+
+  .priority-tag.medium {
+    background: rgba(245,158,11,0.1);
+    color: var(--warning);
+  }
+
+  .priority-tag.low {
+    background: rgba(59,130,246,0.1);
+    color: var(--accent);
+  }
+
+  .action-desc {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .action-desc strong {
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .action-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .action-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .action-btn {
+    padding: 6px 16px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+  }
+
+  .action-btn:hover {
+    background: var(--navy-light);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .action-btn.executed {
+    background: var(--success);
+    pointer-events: none;
+  }
+
+  /* ========== TOAST NOTIFICATION ========== */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--navy-dark);
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.35s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .toast .toast-icon {
+    font-size: 16px;
+  }
+
+  /* ========== OVERLAY / MODAL ========== */
+  .analysis-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .analysis-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .analysis-modal {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 40px;
+    text-align: center;
+    width: 380px;
+    box-shadow: var(--shadow-lg);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+  }
+
+  .analysis-overlay.show .analysis-modal {
+    transform: scale(1);
+  }
+
+  .analysis-spinner {
+    width: 48px;
+    height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--navy);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+
+  .analysis-modal h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .analysis-modal p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .analysis-progress {
+    margin-top: 20px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .analysis-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--navy), var(--accent));
+    border-radius: 4px;
+    width: 0%;
+    animation: progress 2.8s ease-in-out forwards;
+  }
+
+  @keyframes progress {
+    0% { width: 0%; }
+    30% { width: 40%; }
+    60% { width: 70%; }
+    90% { width: 92%; }
+    100% { width: 100%; }
+  }
+
+  /* ========== SCROLLBAR ========== */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+  }
+
+  /* ========== RESPONSIVE ========== */
+  @media (max-width: 1200px) {
+    .three-col {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .summary-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .main-content {
+      padding: 16px;
+    }
+    .header-nav {
+      display: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- DEMO BANNER -->
+<div class="demo-banner">
+  <span>DEMO</span>
+  これはデモ環境です。表示されているデータはすべてサンプルです。
+</div>
+
+<!-- TOP HEADER BAR -->
+<header class="top-header">
+  <div class="header-logo">
+    <div class="header-logo-icon">AI</div>
+    <div class="header-logo-text">
+      在庫最適化AI
+      <small>Inventory Optimization</small>
+    </div>
+  </div>
+
+  <nav class="header-nav">
+    <a href="#" class="active">ダッシュボード</a>
+    <a href="#">在庫一覧</a>
+    <a href="#">需要予測</a>
+    <a href="#">発注管理</a>
+    <a href="#">不動在庫</a>
+    <a href="#">レポート</a>
+    <a href="#">設定</a>
+  </nav>
+
+  <div class="header-right">
+    <button class="header-btn" id="aiAnalyzeBtn" onclick="runAnalysis()">
+      <span class="spinner"></span>
+      <span class="btn-text">&#x1F9E0; AI分析実行</span>
+    </button>
+    <button class="notification-bell">
+      &#128276;
+      <span class="badge"></span>
+    </button>
+    <div class="user-avatar">田中</div>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div>
+      <h1>在庫最適化ダッシュボード</h1>
+      <p>AIによるリアルタイム在庫分析と最適化提案</p>
+    </div>
+    <div class="last-updated">
+      <span class="dot"></span>
+      最終更新: 2026年3月12日 09:45
+    </div>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <div class="card-top">
+        <span class="card-label">総在庫金額</span>
+        <div class="card-icon navy">&#128230;</div>
+      </div>
+      <div class="card-value">¥24,580<span class="unit">万</span></div>
+      <div class="card-sub">
+        前月比 <span class="change down">-3.2%</span> (¥812万 減少)
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-top">
+        <span class="card-label">不動在庫</span>
+        <div class="card-icon red">&#9888;&#65039;</div>
+      </div>
+      <div class="card-value">¥3,240<span class="unit">万</span></div>
+      <div class="card-warning-tag">&#9888; 全体の13.2% - 要対策</div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-top">
+        <span class="card-label">AI発注提案</span>
+        <div class="card-icon blue">&#128161;</div>
+      </div>
+      <div class="card-value">12<span class="unit">件</span></div>
+      <div class="card-sub">
+        うち緊急 <span class="change down">3件</span> ・ 推奨 9件
+      </div>
+    </div>
+
+    <div class="summary-card">
+      <div class="card-top">
+        <span class="card-label">欠品リスク</span>
+        <div class="card-icon amber">&#128200;</div>
+      </div>
+      <div class="card-value">3<span class="unit">品目</span></div>
+      <div class="card-sub">
+        今後7日以内に在庫切れの恐れ
+      </div>
+    </div>
+  </div>
+
+  <!-- THREE COLUMN LAYOUT -->
+  <div class="three-col">
+
+    <!-- LEFT: INVENTORY TABLE -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span class="icon">&#128220;</span>
+          在庫ステータス一覧
+        </div>
+        <div class="panel-actions" id="filterBtns">
+          <button class="filter-btn active" data-filter="all">すべて</button>
+          <button class="filter-btn" data-filter="optimal">適正</button>
+          <button class="filter-btn" data-filter="excess">過剰</button>
+          <button class="filter-btn" data-filter="shortage">不足</button>
+          <button class="filter-btn" data-filter="dead">不動</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="inv-table">
+          <thead>
+            <tr>
+              <th>商品名</th>
+              <th>カテゴリ</th>
+              <th style="text-align:right">現在庫数</th>
+              <th style="text-align:right">適正在庫</th>
+              <th style="text-align:right">AI予測(需要)</th>
+              <th>ステータス</th>
+            </tr>
+          </thead>
+          <tbody id="inventoryBody">
+            <!-- Row 1 -->
+            <tr data-status="shortage" data-id="1">
+              <td>
+                <div class="product-name">商品A - 精密部品 X100</div>
+                <div class="product-cat">電子部品</div>
+              </td>
+              <td>電子部品</td>
+              <td class="num-cell">42</td>
+              <td class="num-cell">150</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow up">&#9650;</span> 180/月
+                </div>
+              </td>
+              <td><span class="status-badge shortage">&#9888; 不足</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="1">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>8.2回/年</value></div>
+                  <div class="detail-item"><label>リードタイム</label><value>14日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥2,400</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥100,800</value></div>
+                  <div class="detail-item"><label>安全在庫日数</label><value>残り3日</value></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 2 -->
+            <tr data-status="optimal" data-id="2">
+              <td>
+                <div class="product-name">商品B - 樹脂成形品 R200</div>
+                <div class="product-cat">成形品</div>
+              </td>
+              <td>成形品</td>
+              <td class="num-cell">320</td>
+              <td class="num-cell">300</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow up">&#9650;</span> 310/月
+                </div>
+              </td>
+              <td><span class="status-badge optimal">&#10003; 適正</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="2">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>11.6回/年</value></div>
+                  <div class="detail-item"><label>リードタイム</label><value>7日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥850</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥272,000</value></div>
+                  <div class="detail-item"><label>安全在庫日数</label><value>残り31日</value></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 3 -->
+            <tr data-status="excess" data-id="3">
+              <td>
+                <div class="product-name">商品C - 金属加工品 M350</div>
+                <div class="product-cat">金属部品</div>
+              </td>
+              <td>金属部品</td>
+              <td class="num-cell">580</td>
+              <td class="num-cell">200</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow down">&#9660;</span> 120/月
+                </div>
+              </td>
+              <td><span class="status-badge excess">&#8593; 過剰</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="3">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>2.5回/年</value></div>
+                  <div class="detail-item"><label>リードタイム</label><value>21日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥5,200</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥3,016,000</value></div>
+                  <div class="detail-item"><label>安全在庫日数</label><value>残り145日</value></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 4 -->
+            <tr data-status="dead" data-id="4">
+              <td>
+                <div class="product-name">商品D - 旧型コネクタ CN50</div>
+                <div class="product-cat">コネクタ</div>
+              </td>
+              <td>コネクタ</td>
+              <td class="num-cell">240</td>
+              <td class="num-cell">0</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow down">&#9660;</span> 5/月
+                </div>
+              </td>
+              <td><span class="status-badge dead">&#10005; 不動</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="4">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>0.3回/年</value></div>
+                  <div class="detail-item"><label>滞留日数</label><value>124日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥1,800</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥432,000</value></div>
+                  <div class="detail-item"><label>最終出荷</label><value>2025/11/08</value></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 5 -->
+            <tr data-status="shortage" data-id="5">
+              <td>
+                <div class="product-name">商品E - ケーブル CB120</div>
+                <div class="product-cat">ケーブル</div>
+              </td>
+              <td>ケーブル</td>
+              <td class="num-cell">85</td>
+              <td class="num-cell">200</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow up">&#9650;</span> 220/月
+                </div>
+              </td>
+              <td><span class="status-badge shortage">&#9888; 不足</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="5">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>14.1回/年</value></div>
+                  <div class="detail-item"><label>リードタイム</label><value>28日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥680</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥57,800</value></div>
+                  <div class="detail-item"><label>安全在庫日数</label><value>残り12日</value></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 6 -->
+            <tr data-status="optimal" data-id="6">
+              <td>
+                <div class="product-name">商品F - 基板ユニット PB80</div>
+                <div class="product-cat">基板</div>
+              </td>
+              <td>基板</td>
+              <td class="num-cell">150</td>
+              <td class="num-cell">140</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow up">&#9650;</span> 135/月
+                </div>
+              </td>
+              <td><span class="status-badge optimal">&#10003; 適正</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="6">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>10.8回/年</value></div>
+                  <div class="detail-item"><label>リードタイム</label><value>10日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥3,600</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥540,000</value></div>
+                  <div class="detail-item"><label>安全在庫日数</label><value>残り33日</value></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 7 -->
+            <tr data-status="excess" data-id="7">
+              <td>
+                <div class="product-name">商品G - パッキン PK400</div>
+                <div class="product-cat">シール材</div>
+              </td>
+              <td>シール材</td>
+              <td class="num-cell">4,200</td>
+              <td class="num-cell">1,500</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow down">&#9660;</span> 800/月
+                </div>
+              </td>
+              <td><span class="status-badge excess">&#8593; 過剰</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="7">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>2.3回/年</value></div>
+                  <div class="detail-item"><label>リードタイム</label><value>5日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥120</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥504,000</value></div>
+                  <div class="detail-item"><label>安全在庫日数</label><value>残り158日</value></div>
+                </div>
+              </td>
+            </tr>
+            <!-- Row 8 -->
+            <tr data-status="shortage" data-id="8">
+              <td>
+                <div class="product-name">商品H - センサーモジュール SM60</div>
+                <div class="product-cat">センサー</div>
+              </td>
+              <td>センサー</td>
+              <td class="num-cell">18</td>
+              <td class="num-cell">80</td>
+              <td class="num-cell">
+                <div class="ai-prediction">
+                  <span class="arrow up">&#9650;</span> 95/月
+                </div>
+              </td>
+              <td><span class="status-badge shortage">&#9888; 不足</span></td>
+            </tr>
+            <tr class="detail-row" data-detail="8">
+              <td colspan="6">
+                <div class="detail-content">
+                  <div class="detail-item"><label>回転率</label><value>12.0回/年</value></div>
+                  <div class="detail-item"><label>リードタイム</label><value>18日</value></div>
+                  <div class="detail-item"><label>単価</label><value>¥12,500</value></div>
+                  <div class="detail-item"><label>在庫金額</label><value>¥225,000</value></div>
+                  <div class="detail-item"><label>安全在庫日数</label><value>残り6日</value></div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MIDDLE: DEMAND FORECAST CHART -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span class="icon">&#128202;</span>
+          需要予測グラフ
+        </div>
+      </div>
+      <div class="chart-area">
+        <div class="chart-legend">
+          <div class="legend-item">
+            <span class="legend-dot actual"></span>
+            実績値
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot predicted"></span>
+            AI予測
+          </div>
+        </div>
+        <div class="bar-chart" id="barChart">
+          <!-- Oct -->
+          <div class="bar-group">
+            <div class="bar actual" style="height:55%; animation-delay:0.1s;">
+              <div class="bar-tooltip">実績: 820</div>
+            </div>
+            <div class="bar predicted" style="height:52%; animation-delay:0.15s;">
+              <div class="bar-tooltip">予測: 790</div>
+            </div>
+            <div class="bar-label">10月</div>
+          </div>
+          <!-- Nov -->
+          <div class="bar-group">
+            <div class="bar actual" style="height:68%; animation-delay:0.2s;">
+              <div class="bar-tooltip">実績: 1,020</div>
+            </div>
+            <div class="bar predicted" style="height:65%; animation-delay:0.25s;">
+              <div class="bar-tooltip">予測: 980</div>
+            </div>
+            <div class="bar-label">11月</div>
+          </div>
+          <!-- Dec -->
+          <div class="bar-group">
+            <div class="bar actual" style="height:85%; animation-delay:0.3s;">
+              <div class="bar-tooltip">実績: 1,280</div>
+            </div>
+            <div class="bar predicted" style="height:80%; animation-delay:0.35s;">
+              <div class="bar-tooltip">予測: 1,200</div>
+            </div>
+            <div class="bar-label">12月</div>
+          </div>
+          <!-- Jan -->
+          <div class="bar-group">
+            <div class="bar actual" style="height:60%; animation-delay:0.4s;">
+              <div class="bar-tooltip">実績: 900</div>
+            </div>
+            <div class="bar predicted" style="height:62%; animation-delay:0.45s;">
+              <div class="bar-tooltip">予測: 930</div>
+            </div>
+            <div class="bar-label">1月</div>
+          </div>
+          <!-- Feb -->
+          <div class="bar-group">
+            <div class="bar actual" style="height:72%; animation-delay:0.5s;">
+              <div class="bar-tooltip">実績: 1,080</div>
+            </div>
+            <div class="bar predicted" style="height:70%; animation-delay:0.55s;">
+              <div class="bar-tooltip">予測: 1,050</div>
+            </div>
+            <div class="bar-label">2月</div>
+          </div>
+          <!-- Mar (predicted only) -->
+          <div class="bar-group">
+            <div class="bar actual" style="height:0%; animation-delay:0.6s; background: repeating-linear-gradient(45deg, var(--navy), var(--navy) 2px, transparent 2px, transparent 6px); opacity:0.3;">
+              <div class="bar-tooltip">集計中</div>
+            </div>
+            <div class="bar predicted" style="height:78%; animation-delay:0.65s;">
+              <div class="bar-tooltip">予測: 1,170</div>
+            </div>
+            <div class="bar-label">3月</div>
+          </div>
+        </div>
+
+        <!-- Chart summary -->
+        <div style="margin-top:20px; padding:14px; background:var(--bg); border-radius:var(--radius-sm);">
+          <div style="font-size:12px; font-weight:600; color:var(--text-primary); margin-bottom:6px;">
+            &#129302; AI予測サマリー
+          </div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.7;">
+            3月の需要は前月比 <strong style="color:var(--success);">+8.3%</strong> の増加を予測。<br>
+            予測精度（過去6ヶ月平均）: <strong style="color:var(--navy);">96.2%</strong><br>
+            季節要因により4月はさらに <strong style="color:var(--warning);">+12%</strong> の上昇見込み。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: AI ACTION PROPOSALS -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <span class="icon">&#129302;</span>
+          AIアクション提案
+        </div>
+        <div style="font-size:11px; color:var(--text-muted); font-weight:500;">4件の提案</div>
+      </div>
+      <div class="action-list">
+
+        <!-- Action 1: Reorder -->
+        <div class="action-card priority-high">
+          <div class="action-header">
+            <div class="action-type">&#128666; 発注推奨</div>
+            <span class="priority-tag high">緊急</span>
+          </div>
+          <div class="action-desc">
+            <strong>商品A（精密部品 X100）</strong>の在庫が<strong>3日以内に不足</strong>する見込みです。現在庫42個に対しAI需要予測は月180個。<strong>発注数量50個</strong>の即時発注を提案します。
+          </div>
+          <div class="action-footer">
+            <span class="action-meta">推定コスト: ¥120,000</span>
+            <button class="action-btn" onclick="executeAction(this, '商品Aの発注')">実行</button>
+          </div>
+        </div>
+
+        <!-- Action 2: Discount -->
+        <div class="action-card priority-medium">
+          <div class="action-header">
+            <div class="action-type">&#127991; 値引き販売</div>
+            <span class="priority-tag medium">推奨</span>
+          </div>
+          <div class="action-desc">
+            <strong>商品D（旧型コネクタ CN50）</strong>が<strong>90日以上不動</strong>の状態です。在庫金額¥432,000の滞留を解消するため、<strong>20%値引き</strong>での販売キャンペーンを提案します。
+          </div>
+          <div class="action-footer">
+            <span class="action-meta">回収見込: ¥345,600</span>
+            <button class="action-btn" onclick="executeAction(this, '値引きキャンペーン')">実行</button>
+          </div>
+        </div>
+
+        <!-- Action 3: Supplier Change -->
+        <div class="action-card priority-medium">
+          <div class="action-header">
+            <div class="action-type">&#128259; 仕入先変更</div>
+            <span class="priority-tag medium">推奨</span>
+          </div>
+          <div class="action-desc">
+            <strong>商品E（ケーブル CB120）</strong>の現行リードタイムは28日と長く、欠品リスクが高い状態です。リードタイム<strong>14日</strong>の<strong>代替仕入先</strong>への切替を提案します。
+          </div>
+          <div class="action-footer">
+            <span class="action-meta">リードタイム: 28日→14日</span>
+            <button class="action-btn" onclick="executeAction(this, '仕入先変更')">実行</button>
+          </div>
+        </div>
+
+        <!-- Action 4: Seasonal Adjustment -->
+        <div class="action-card priority-low">
+          <div class="action-header">
+            <div class="action-type">&#128197; 季節調整</div>
+            <span class="priority-tag low">計画</span>
+          </div>
+          <div class="action-desc">
+            来月の需要増（<strong>+12%予測</strong>）に備え、<strong>商品B（樹脂成形品 R200）</strong>の安全在庫を300→<strong>360個</strong>に引き上げることを提案します。
+          </div>
+          <div class="action-footer">
+            <span class="action-meta">追加コスト: ¥51,000</span>
+            <button class="action-btn" onclick="executeAction(this, '安全在庫調整')">実行</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /three-col -->
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon">&#10003;</span>
+  <span id="toastMsg">アクションを実行しました</span>
+</div>
+
+<!-- ANALYSIS OVERLAY -->
+<div class="analysis-overlay" id="analysisOverlay">
+  <div class="analysis-modal">
+    <div class="analysis-spinner"></div>
+    <h3>AI分析を実行中...</h3>
+    <p>在庫データを解析し、最適化提案を<br>生成しています。</p>
+    <div class="analysis-progress">
+      <div class="analysis-progress-bar" id="analysisProgressBar"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  /* ===== TABLE ROW SELECTION & DETAIL ===== */
+  var tbody = document.getElementById('inventoryBody');
+  var dataRows = tbody.querySelectorAll('tr[data-id]');
+
+  dataRows.forEach(function(row) {
+    row.addEventListener('click', function() {
+      var id = this.getAttribute('data-id');
+      var detailRow = tbody.querySelector('tr[data-detail="' + id + '"]');
+      var wasSelected = this.classList.contains('selected');
+
+      // Close all
+      dataRows.forEach(function(r) { r.classList.remove('selected'); });
+      tbody.querySelectorAll('.detail-row').forEach(function(d) {
+        d.classList.remove('show');
+      });
+
+      // Toggle current
+      if (!wasSelected) {
+        this.classList.add('selected');
+        if (detailRow) detailRow.classList.add('show');
+      }
+    });
+  });
+
+  /* ===== FILTER BUTTONS ===== */
+  var filterContainer = document.getElementById('filterBtns');
+  var filterBtns = filterContainer.querySelectorAll('.filter-btn');
+
+  filterBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var filter = this.getAttribute('data-filter');
+
+      // Update active button
+      filterBtns.forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+
+      // Close details
+      dataRows.forEach(function(r) { r.classList.remove('selected'); });
+      tbody.querySelectorAll('.detail-row').forEach(function(d) {
+        d.classList.remove('show');
+      });
+
+      // Filter rows
+      dataRows.forEach(function(row) {
+        var detailRow = tbody.querySelector('tr[data-detail="' + row.getAttribute('data-id') + '"]');
+        if (filter === 'all' || row.getAttribute('data-status') === filter) {
+          row.style.display = '';
+          if (detailRow) detailRow.style.display = '';
+        } else {
+          row.style.display = 'none';
+          if (detailRow) detailRow.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  /* ===== ANIMATED BARS ON SCROLL ===== */
+  var chartObserved = false;
+  var barChart = document.getElementById('barChart');
+
+  function resetAndAnimateBars() {
+    var bars = barChart.querySelectorAll('.bar');
+    bars.forEach(function(bar) {
+      bar.style.animation = 'none';
+      bar.offsetHeight; // force reflow
+      bar.style.animation = '';
+    });
+  }
+
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(entry) {
+      if (entry.isIntersecting && !chartObserved) {
+        chartObserved = true;
+        resetAndAnimateBars();
+      }
+    });
+  }, { threshold: 0.3 });
+
+  observer.observe(barChart);
+
+  /* ===== NAV TABS ===== */
+  var navLinks = document.querySelectorAll('.header-nav a');
+  navLinks.forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      navLinks.forEach(function(l) { l.classList.remove('active'); });
+      this.classList.add('active');
+    });
+  });
+
+  /* ===== TOAST ===== */
+  window.showToast = function(msg) {
+    var toast = document.getElementById('toast');
+    var toastMsg = document.getElementById('toastMsg');
+    toastMsg.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(function() {
+      toast.classList.remove('show');
+    }, 3000);
+  };
+
+  /* ===== EXECUTE ACTION ===== */
+  window.executeAction = function(btn, name) {
+    btn.textContent = '実行中...';
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+
+    setTimeout(function() {
+      btn.textContent = '完了';
+      btn.classList.add('executed');
+      btn.style.opacity = '1';
+      showToast(name + 'を実行しました');
+    }, 1200);
+  };
+
+  /* ===== AI ANALYSIS ===== */
+  window.runAnalysis = function() {
+    var btn = document.getElementById('aiAnalyzeBtn');
+    var overlay = document.getElementById('analysisOverlay');
+    var progressBar = document.getElementById('analysisProgressBar');
+
+    btn.classList.add('loading');
+    overlay.classList.add('show');
+
+    // Reset progress animation
+    progressBar.style.animation = 'none';
+    progressBar.offsetHeight;
+    progressBar.style.animation = '';
+
+    setTimeout(function() {
+      overlay.classList.remove('show');
+      btn.classList.remove('loading');
+      showToast('AI分析が完了しました。新しい提案が3件追加されました。');
+    }, 3000);
+  };
+
+  /* ===== NOTIFICATION BELL ===== */
+  var bell = document.querySelector('.notification-bell');
+  bell.addEventListener('click', function() {
+    var badge = this.querySelector('.badge');
+    if (badge) {
+      badge.style.display = 'none';
+      showToast('通知を確認しました');
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
